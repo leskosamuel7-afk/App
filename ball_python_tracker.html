@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>KrájtApp</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #1a1d27;
+    --bg3: #22263a;
+    --card: #1e2235;
+    --accent: #c8a96e;
+    --accent2: #8ab4a0;
+    --danger: #e07070;
+    --text: #eae6dc;
+    --text2: #9a96a0;
+    --border: rgba(200,169,110,0.15);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: 'Georgia', serif; min-height: 100vh; font-size: 15px; }
+  
+  /* NAV */
+  #nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg2); border-top: 1px solid var(--border); display: flex; z-index: 100; }
+  .nav-btn { flex: 1; padding: 10px 4px 14px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; color: var(--text2); font-size: 10px; letter-spacing: 0.5px; border: none; background: none; transition: color 0.2s; }
+  .nav-btn.active { color: var(--accent); }
+  .nav-icon { font-size: 20px; line-height: 1; }
+
+  /* HEADER */
+  #header { background: var(--bg2); padding: 16px 16px 12px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; }
+  .header-title { font-size: 18px; color: var(--accent); font-weight: normal; letter-spacing: 1px; }
+  .header-sub { font-size: 11px; color: var(--text2); font-family: monospace; }
+
+  /* CONTENT */
+  #content { padding: 16px; padding-bottom: 90px; }
+
+  /* PAGES */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
+  .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .snake-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--bg3); border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .snake-name { font-size: 17px; color: var(--text); }
+  .snake-morph { font-size: 12px; color: var(--accent); font-family: monospace; }
+  .snake-sex { font-size: 11px; color: var(--text2); }
+  
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-family: monospace; }
+  .badge-green { background: rgba(138,180,160,0.15); color: var(--accent2); border: 1px solid rgba(138,180,160,0.3); }
+  .badge-amber { background: rgba(200,169,110,0.12); color: var(--accent); border: 1px solid rgba(200,169,110,0.3); }
+  .badge-red { background: rgba(224,112,112,0.12); color: var(--danger); border: 1px solid rgba(224,112,112,0.3); }
+  .badge-gray { background: rgba(154,150,160,0.12); color: var(--text2); border: 1px solid rgba(154,150,160,0.2); }
+
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .stat-box { background: var(--bg3); border-radius: var(--radius-sm); padding: 8px 6px; text-align: center; }
+  .stat-val { font-size: 15px; color: var(--text); font-weight: bold; }
+  .stat-lbl { font-size: 10px; color: var(--text2); margin-top: 2px; }
+
+  .action-row { display: flex; gap: 8px; margin-top: 12px; }
+  .btn { flex: 1; padding: 10px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: transparent; color: var(--text); font-size: 13px; cursor: pointer; transition: all 0.15s; text-align: center; font-family: inherit; }
+  .btn:active { transform: scale(0.96); background: var(--bg3); }
+  .btn-accent { border-color: var(--accent); color: var(--accent); }
+  .btn-green { border-color: var(--accent2); color: var(--accent2); }
+  .btn-danger { border-color: var(--danger); color: var(--danger); }
+  .btn-full { width: 100%; margin-bottom: 8px; }
+
+  /* FAB */
+  .fab { position: fixed; right: 18px; bottom: 74px; width: 54px; height: 54px; border-radius: 50%; background: var(--accent); border: none; font-size: 26px; color: var(--bg); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 90; box-shadow: 0 4px 20px rgba(200,169,110,0.4); transition: transform 0.15s; }
+  .fab:active { transform: scale(0.92); }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: flex-end; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--bg2); border-radius: var(--radius) var(--radius) 0 0; width: 100%; max-height: 90vh; overflow-y: auto; padding: 20px 16px 30px; border-top: 1px solid var(--border); }
+  .modal-title { font-size: 17px; color: var(--accent); margin-bottom: 18px; }
+  .form-group { margin-bottom: 14px; }
+  label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 5px; letter-spacing: 0.5px; }
+  input, select, textarea { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text); font-size: 15px; font-family: inherit; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select option { background: var(--bg2); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+
+  /* SECTION HEADER */
+  .section-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; margin-top: 6px; }
+  .section-hdr h2 { font-size: 14px; color: var(--text2); font-weight: normal; letter-spacing: 1px; text-transform: uppercase; font-family: monospace; }
+
+  /* LOG ITEMS */
+  .log-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--card); border-radius: var(--radius-sm); margin-bottom: 8px; border: 1px solid var(--border); }
+  .log-icon { font-size: 22px; flex-shrink: 0; }
+  .log-info { flex: 1; min-width: 0; }
+  .log-title { font-size: 14px; color: var(--text); }
+  .log-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .log-date { font-size: 11px; color: var(--text2); font-family: monospace; flex-shrink: 0; }
+
+  /* REMINDERS */
+  .reminder-item { padding: 12px 14px; background: var(--card); border-radius: var(--radius-sm); margin-bottom: 8px; border-left: 3px solid var(--accent); display: flex; align-items: center; gap: 12px; }
+  .reminder-item.urgent { border-left-color: var(--danger); }
+  .reminder-item.done { opacity: 0.4; border-left-color: var(--text2); }
+
+  /* DETAIL VIEW */
+  .detail-header { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+  .detail-avatar { font-size: 48px; text-align: center; margin-bottom: 10px; }
+  .detail-name { font-size: 22px; text-align: center; color: var(--accent); }
+  .detail-info { font-size: 12px; color: var(--text2); text-align: center; margin-top: 4px; }
+  .detail-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 48px 16px; color: var(--text2); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; line-height: 1.6; }
+
+  /* WEIGHT CHART */
+  .weight-chart { background: var(--bg3); border-radius: var(--radius-sm); padding: 12px; margin: 10px 0; position: relative; height: 80px; }
+  .chart-bars { display: flex; align-items: flex-end; gap: 4px; height: 100%; }
+  .chart-bar { flex: 1; background: rgba(200,169,110,0.4); border-radius: 3px 3px 0 0; min-height: 4px; transition: background 0.2s; }
+  .chart-bar:last-child { background: var(--accent); }
+
+  /* TOGGLE */
+  .toggle-row { display: flex; gap: 0; margin-bottom: 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .toggle-btn { flex: 1; padding: 8px 4px; text-align: center; font-size: 12px; cursor: pointer; border: none; background: transparent; color: var(--text2); transition: all 0.2s; }
+  .toggle-btn.active { background: var(--accent); color: var(--bg); }
+
+  .result-ok { color: var(--accent2); }
+  .result-nok { color: var(--danger); }
+  .result-partial { color: var(--accent); }
+  
+  #snake-select-filter { margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div>
+    <div class="header-title">🐍 KrájtApp</div>
+    <div class="header-sub" id="header-sub">načítám...</div>
+  </div>
+  <div id="header-right" style="font-size:11px;color:var(--text2);text-align:right;"></div>
+</div>
+
+<div id="content">
+  <!-- HADI PAGE -->
+  <div class="page active" id="page-hadi">
+    <div class="section-hdr">
+      <h2>Moji hadi</h2>
+    </div>
+    <div id="snakes-list"></div>
+  </div>
+
+  <!-- KRMENÍ PAGE -->
+  <div class="page" id="page-krmeni">
+    <div class="section-hdr"><h2>Krmení</h2></div>
+    <select id="snake-select-filter" style="margin-bottom:12px;">
+      <option value="">— všichni hadi —</option>
+    </select>
+    <div id="feedings-list"></div>
+  </div>
+
+  <!-- VÁHA PAGE -->
+  <div class="page" id="page-vaha">
+    <div class="section-hdr"><h2>Váha</h2></div>
+    <select id="snake-select-filter-w" style="margin-bottom:12px;">
+      <option value="">— všichni hadi —</option>
+    </select>
+    <div id="weights-list"></div>
+  </div>
+
+  <!-- SVLEK PAGE -->
+  <div class="page" id="page-svlek">
+    <div class="section-hdr"><h2>Svlékání</h2></div>
+    <select id="snake-select-filter-s" style="margin-bottom:12px;">
+      <option value="">— všichni hadi —</option>
+    </select>
+    <div id="sheds-list"></div>
+  </div>
+
+  <!-- NOTIFIKACE PAGE -->
+  <div class="page" id="page-notif">
+    <div class="section-hdr"><h2>Připomínky</h2></div>
+    <div id="reminders-list"></div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab-btn" onclick="openAddModal()">+</button>
+
+<!-- NAV -->
+<div id="nav">
+  <button class="nav-btn active" data-page="hadi" onclick="switchPage('hadi')">
+    <span class="nav-icon">🐍</span>Hadi
+  </button>
+  <button class="nav-btn" data-page="krmeni" onclick="switchPage('krmeni')">
+    <span class="nav-icon">🐁</span>Krmení
+  </button>
+  <button class="nav-btn" data-page="vaha" onclick="switchPage('vaha')">
+    <span class="nav-icon">⚖️</span>Váha
+  </button>
+  <button class="nav-btn" data-page="svlek" onclick="switchPage('svlek')">
+    <span class="nav-icon">🧤</span>Svlek
+  </button>
+  <button class="nav-btn" data-page="notif" onclick="switchPage('notif')">
+    <span class="nav-icon">🔔</span>Plán
+  </button>
+</div>
+
+<!-- MODALS -->
+<!-- Add Snake Modal -->
+<div class="modal-overlay" id="modal-snake">
+  <div class="modal">
+    <div class="modal-title">Nový had</div>
+    <div class="form-group"><label>Jméno *</label><input id="s-name" placeholder="Např. Naja, Luna..."></div>
+    <div class="form-row">
+      <div class="form-group"><label>Morph</label><input id="s-morph" placeholder="Např. Pastel"></div>
+      <div class="form-group"><label>Pohlaví</label>
+        <select id="s-sex"><option value="?">Neznámé</option><option value="♂">♂ Samec</option><option value="♀">♀ Samice</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Datum narození</label><input id="s-birth" type="date"></div>
+      <div class="form-group"><label>Váha (g)</label><input id="s-weight" type="number" placeholder="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Interval krmení (dny)</label><input id="s-interval" type="number" value="7"></div>
+      <div class="form-group"><label>Status</label>
+        <select id="s-status"><option value="aktivní">Aktivní</option><option value="prodaný">Prodaný</option><option value="uhynulý">Uhynulý</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Poznámky</label><textarea id="s-notes" rows="2"></textarea></div>
+    <div class="form-group"><label>Emoji avatár</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;" id="emoji-picker">
+        <span>🐍</span><span>🟡</span><span>⚫</span><span>🟠</span><span>🔵</span><span>🟤</span><span>🌿</span><span>💜</span>
+      </div>
+      <input id="s-emoji" value="🐍" style="margin-top:8px;width:80px;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-snake')">Zrušit</button>
+      <button class="btn btn-accent" onclick="saveSnake()">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Feeding Modal -->
+<div class="modal-overlay" id="modal-feeding">
+  <div class="modal">
+    <div class="modal-title">Přidat krmení</div>
+    <div class="form-group"><label>Had *</label>
+      <select id="f-snake"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Datum</label><input id="f-date" type="date"></div>
+      <div class="form-group"><label>Výsledek</label>
+        <select id="f-result"><option value="přijato">✅ Přijato</option><option value="odmítnuto">❌ Odmítnuto</option><option value="částečně">⚠️ Částečně</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Kořist</label>
+        <select id="f-prey"><option>Myš</option><option>Potkan</option><option>Křeček</option><option>Jiné</option></select>
+      </div>
+      <div class="form-group"><label>Velikost</label>
+        <select id="f-size"><option>Hopper</option><option>Small</option><option>Medium</option><option>Large</option><option>XL</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Stav kořisti</label>
+      <select id="f-state"><option>Zmrazená</option><option>Rozmražená</option><option>Čerstvá</option><option>Živá</option></select>
+    </div>
+    <div class="form-group"><label>Poznámky</label><textarea id="f-notes" rows="2"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-feeding')">Zrušit</button>
+      <button class="btn btn-green" onclick="saveFeeding()">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Weight Modal -->
+<div class="modal-overlay" id="modal-weight">
+  <div class="modal">
+    <div class="modal-title">Přidat váhu</div>
+    <div class="form-group"><label>Had *</label><select id="w-snake"></select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Datum</label><input id="w-date" type="date"></div>
+      <div class="form-group"><label>Váha (g) *</label><input id="w-weight" type="number" placeholder="0"></div>
+    </div>
+    <div class="form-group"><label>Poznámky</label><textarea id="w-notes" rows="2"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-weight')">Zrušit</button>
+      <button class="btn btn-accent" onclick="saveWeight()">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Shed Modal -->
+<div class="modal-overlay" id="modal-shed">
+  <div class="modal">
+    <div class="modal-title">Přidat svlek</div>
+    <div class="form-group"><label>Had *</label><select id="sh-snake"></select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Datum</label><input id="sh-date" type="date"></div>
+      <div class="form-group"><label>Výsledek</label>
+        <select id="sh-result"><option value="kompletní">✅ Kompletní</option><option value="nekompletní">❌ Nekompletní</option><option value="problémový">⚠️ Problémový</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label>Poznámky</label><textarea id="sh-notes" rows="2"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-shed')">Zrušit</button>
+      <button class="btn btn-accent" onclick="saveShed()">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Choose what to add (when on non-snake pages) -->
+<div class="modal-overlay" id="modal-choose">
+  <div class="modal">
+    <div class="modal-title">Co přidat?</div>
+    <button class="btn btn-full" onclick="closeModal('modal-choose');openModal('modal-snake')">🐍 Nový had</button>
+    <button class="btn btn-full btn-green" onclick="closeModal('modal-choose');openFeedingModal()">🐁 Krmení</button>
+    <button class="btn btn-full btn-accent" onclick="closeModal('modal-choose');openWeightModal()">⚖️ Váha</button>
+    <button class="btn btn-full" onclick="closeModal('modal-choose');openShedModal()">🧤 Svlek</button>
+    <button class="btn btn-full" onclick="closeModal('modal-choose')">Zrušit</button>
+  </div>
+</div>
+
+<script>
+const TODAY = new Date().toISOString().split('T')[0];
+
+// DATA LAYER
+let DB = {
+  snakes: [],
+  feedings: [],
+  weights: [],
+  sheds: [],
+  reminders: []
+};
+
+function save() { try { localStorage.setItem('krajtapp_db', JSON.stringify(DB)); } catch(e){} }
+function load() {
+  try {
+    const d = localStorage.getItem('krajtapp_db');
+    if (d) DB = JSON.parse(d);
+  } catch(e) {}
+  if (!DB.snakes) DB.snakes = [];
+  if (!DB.feedings) DB.feedings = [];
+  if (!DB.weights) DB.weights = [];
+  if (!DB.sheds) DB.sheds = [];
+  if (!DB.reminders) DB.reminders = [];
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+
+// CURRENT PAGE
+let currentPage = 'hadi';
+
+function switchPage(p) {
+  currentPage = p;
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-' + p).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-page="'+p+'"]').classList.add('active');
+  renderPage(p);
+  updateHeader();
+}
+
+function updateHeader() {
+  const names = {hadi:'Hadi', krmeni:'Krmení', vaha:'Váha', svlek:'Svlékání', notif:'Připomínky'};
+  document.querySelector('.header-title').textContent = '🐍 ' + (names[currentPage]||'KrájtApp');
+  const now = new Date();
+  document.getElementById('header-sub').textContent = now.toLocaleDateString('cs-CZ',{weekday:'short',day:'numeric',month:'short'});
+  const count = DB.snakes.filter(s=>s.status==='aktivní').length;
+  document.getElementById('header-right').textContent = count + (count===1?' had':' hadů');
+}
+
+// MODALS
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function openAddModal() {
+  if (currentPage === 'hadi') { openModal('modal-snake'); }
+  else if (currentPage === 'krmeni') { openFeedingModal(); }
+  else if (currentPage === 'vaha') { openWeightModal(); }
+  else if (currentPage === 'svlek') { openShedModal(); }
+  else { openModal('modal-choose'); }
+}
+
+function populateSnakeSelect(selId) {
+  const sel = document.getElementById(selId);
+  sel.innerHTML = DB.snakes.filter(s=>s.status==='aktivní').map(s=>`<option value="${s.id}">${s.emoji} ${s.name}</option>`).join('');
+}
+
+function openFeedingModal() {
+  document.getElementById('f-date').value = TODAY;
+  populateSnakeSelect('f-snake');
+  openModal('modal-feeding');
+}
+function openWeightModal() {
+  document.getElementById('w-date').value = TODAY;
+  populateSnakeSelect('w-snake');
+  openModal('modal-weight');
+}
+function openShedModal() {
+  document.getElementById('sh-date').value = TODAY;
+  populateSnakeSelect('sh-snake');
+  openModal('modal-shed');
+}
+
+// EMOJI PICKER
+document.querySelectorAll('#emoji-picker span').forEach(sp => {
+  sp.style.cssText = 'font-size:24px;cursor:pointer;padding:4px;';
+  sp.onclick = () => { document.getElementById('s-emoji').value = sp.textContent; };
+});
+
+// SAVE FUNCTIONS
+function saveSnake() {
+  const name = document.getElementById('s-name').value.trim();
+  if (!name) { alert('Zadej jméno!'); return; }
+  const w = parseInt(document.getElementById('s-weight').value)||0;
+  const snake = {
+    id: uid(), name, emoji: document.getElementById('s-emoji').value||'🐍',
+    morph: document.getElementById('s-morph').value.trim(),
+    sex: document.getElementById('s-sex').value,
+    birth_date: document.getElementById('s-birth').value,
+    weight_current: w,
+    feeding_interval_days: parseInt(document.getElementById('s-interval').value)||7,
+    notes: document.getElementById('s-notes').value.trim(),
+    status: document.getElementById('s-status').value,
+    created: TODAY
+  };
+  DB.snakes.push(snake);
+  if (w > 0) DB.weights.push({id:uid(), snake_id:snake.id, date:TODAY, weight:w, notes:'Počáteční váha'});
+  autoReminders(snake);
+  save(); closeModal('modal-snake'); renderPage('hadi'); updateHeader();
+  clearSnakeForm();
+}
+
+function clearSnakeForm() {
+  ['s-name','s-morph','s-birth','s-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('s-weight').value='';
+  document.getElementById('s-interval').value='7';
+  document.getElementById('s-emoji').value='🐍';
+}
+
+function saveFeeding() {
+  const sid = document.getElementById('f-snake').value;
+  if (!sid) return;
+  const feeding = {
+    id: uid(), snake_id: sid,
+    date: document.getElementById('f-date').value,
+    prey_type: document.getElementById('f-prey').value,
+    prey_size: document.getElementById('f-size').value,
+    prey_state: document.getElementById('f-state').value,
+    result: document.getElementById('f-result').value,
+    notes: document.getElementById('f-notes').value.trim()
+  };
+  DB.feedings.push(feeding);
+  const snake = DB.snakes.find(s=>s.id===sid);
+  if (snake && feeding.result==='přijato') {
+    const nextDate = addDays(feeding.date, snake.feeding_interval_days);
+    const existing = DB.reminders.find(r=>r.snake_id===sid&&r.type==='krmení'&&!r.done);
+    if (existing) { existing.due_date = nextDate; }
+    else DB.reminders.push({id:uid(), snake_id:sid, type:'krmení', due_date:nextDate, done:false});
+  }
+  save(); closeModal('modal-feeding');
+  document.getElementById('f-notes').value='';
+  renderPage(currentPage);
+}
+
+function saveWeight() {
+  const sid = document.getElementById('w-snake').value;
+  if (!sid) return;
+  const w = parseInt(document.getElementById('w-weight').value);
+  if (!w) { alert('Zadej váhu!'); return; }
+  DB.weights.push({id:uid(), snake_id:sid, date:document.getElementById('w-date').value, weight:w, notes:document.getElementById('w-notes').value.trim()});
+  const snake = DB.snakes.find(s=>s.id===sid);
+  if (snake) { snake.weight_current = w; }
+  save(); closeModal('modal-weight');
+  document.getElementById('w-notes').value='';
+  renderPage(currentPage);
+}
+
+function saveShed() {
+  const sid = document.getElementById('sh-snake').value;
+  if (!sid) return;
+  DB.sheds.push({id:uid(), snake_id:sid, date:document.getElementById('sh-date').value, result:document.getElementById('sh-result').value, notes:document.getElementById('sh-notes').value.trim()});
+  save(); closeModal('modal-shed');
+  document.getElementById('sh-notes').value='';
+  renderPage(currentPage);
+}
+
+// AUTO REMINDERS
+function autoReminders(snake) {
+  if (snake.feeding_interval_days > 0) {
+    DB.reminders.push({id:uid(), snake_id:snake.id, type:'krmení', due_date:addDays(TODAY, snake.feeding_interval_days), done:false});
+  }
+}
+
+function addDays(dateStr, days) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+function daysDiff(dateStr) {
+  const d = new Date(dateStr);
+  const now = new Date(TODAY);
+  return Math.round((d - now) / 86400000);
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('cs-CZ', {day:'numeric',month:'short',year:'numeric'});
+}
+
+function getAge(birthStr) {
+  if (!birthStr) return '';
+  const b = new Date(birthStr);
+  const now = new Date();
+  const months = (now.getFullYear()-b.getFullYear())*12 + now.getMonth()-b.getMonth();
+  if (months < 12) return months + ' měs';
+  return Math.floor(months/12) + ' let ' + (months%12) + ' měs';
+}
+
+// RENDER
+function renderPage(p) {
+  if (p==='hadi') renderSnakes();
+  else if (p==='krmeni') renderFeedings();
+  else if (p==='vaha') renderWeights();
+  else if (p==='svlek') renderSheds();
+  else if (p==='notif') renderReminders();
+}
+
+function getLastFeeding(sid) {
+  return DB.feedings.filter(f=>f.snake_id===sid).sort((a,b)=>b.date.localeCompare(a.date))[0];
+}
+function getLastWeight(sid) {
+  return DB.weights.filter(w=>w.snake_id===sid).sort((a,b)=>b.date.localeCompare(a.date))[0];
+}
+function getLastShed(sid) {
+  return DB.sheds.filter(s=>s.snake_id===sid).sort((a,b)=>b.date.localeCompare(a.date))[0];
+}
+function getNextFeeding(sid) {
+  const r = DB.reminders.find(r=>r.snake_id===sid&&r.type==='krmení'&&!r.done);
+  return r ? r.due_date : null;
+}
+
+function renderSnakes() {
+  const el = document.getElementById('snakes-list');
+  if (DB.snakes.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🐍</div><p>Zatím žádní hadi.<br>Přidej prvního klepnutím na <strong>+</strong></p></div>`;
+    return;
+  }
+  el.innerHTML = DB.snakes.filter(s=>s.status==='aktivní').map(snake => {
+    const lf = getLastFeeding(snake.id);
+    const lw = getLastWeight(snake.id);
+    const ls = getLastShed(snake.id);
+    const nf = getNextFeeding(snake.id);
+    const nfDays = nf ? daysDiff(nf) : null;
+    let feedBadge = '';
+    if (nf) {
+      if (nfDays < 0) feedBadge = `<span class="badge badge-red">Krmení: ${Math.abs(nfDays)}d po splatnosti</span>`;
+      else if (nfDays === 0) feedBadge = `<span class="badge badge-amber">Krmení: dnes!</span>`;
+      else if (nfDays <= 2) feedBadge = `<span class="badge badge-amber">Krmení: za ${nfDays}d</span>`;
+      else feedBadge = `<span class="badge badge-green">Krmení: za ${nfDays}d</span>`;
+    }
+    const wStr = snake.weight_current > 0 ? snake.weight_current + ' g' : '—';
+    const ageStr = getAge(snake.birth_date);
+    return `<div class="card" onclick="showSnakeDetail('${snake.id}')">
+      <div class="card-header">
+        <div class="snake-avatar">${snake.emoji||'🐍'}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="snake-name">${snake.name}</div>
+          <div class="snake-morph">${snake.morph||'—'}</div>
+          <div class="snake-sex">${snake.sex||'?'}${ageStr?' · '+ageStr:''}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:16px;font-weight:bold;color:var(--accent);">${wStr}</div>
+          <div style="font-size:10px;color:var(--text2);">aktuální</div>
+        </div>
+      </div>
+      <div class="badges">${feedBadge}
+        ${lf?`<span class="badge badge-gray">Naposledy: ${formatDate(lf.date)}</span>`:''}
+        ${ls?`<span class="badge badge-gray">Svlek: ${formatDate(ls.date)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showSnakeDetail(sid) {
+  const snake = DB.snakes.find(s=>s.id===sid);
+  if (!snake) return;
+  const weights = DB.weights.filter(w=>w.snake_id===sid).sort((a,b)=>a.date.localeCompare(b.date));
+  const feedings = DB.feedings.filter(f=>f.snake_id===sid).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  const sheds = DB.sheds.filter(s=>s.snake_id===sid).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);
+  const totalF = DB.feedings.filter(f=>f.snake_id===sid).length;
+  const acceptedF = DB.feedings.filter(f=>f.snake_id===sid&&f.result==='přijato').length;
+  
+  let chartHtml = '';
+  if (weights.length > 1) {
+    const vals = weights.slice(-8).map(w=>w.weight);
+    const maxV = Math.max(...vals);
+    chartHtml = `<div class="weight-chart"><div class="chart-bars">${vals.map(v=>`<div class="chart-bar" style="height:${Math.round((v/maxV)*100)}%"></div>`).join('')}</div></div>`;
+  }
+
+  const el = document.getElementById('snakes-list');
+  el.innerHTML = `
+    <button class="btn" onclick="renderSnakes()" style="margin-bottom:12px;">← Zpět</button>
+    <div class="detail-header">
+      <div class="detail-avatar">${snake.emoji||'🐍'}</div>
+      <div class="detail-name">${snake.name}</div>
+      <div class="detail-info">${snake.morph||''} · ${snake.sex||'?'} · ${getAge(snake.birth_date)||'věk neznámý'}</div>
+      <div class="detail-stats">
+        <div class="stat-box"><div class="stat-val">${snake.weight_current||'—'}</div><div class="stat-lbl">Váha (g)</div></div>
+        <div class="stat-box"><div class="stat-val">${totalF}</div><div class="stat-lbl">Krmení celkem</div></div>
+        <div class="stat-box"><div class="stat-val">${totalF>0?Math.round(acceptedF/totalF*100)+'%':'—'}</div><div class="stat-lbl">Úspěšnost</div></div>
+        <div class="stat-box"><div class="stat-val">${DB.sheds.filter(s=>s.snake_id===sid).length}</div><div class="stat-lbl">Svleky</div></div>
+      </div>
+    </div>
+    ${chartHtml}
+    <div class="action-row">
+      <button class="btn btn-green" onclick="closeAllModals();document.getElementById('f-snake').value='${sid}';openFeedingModal()">🐁 Krmení</button>
+      <button class="btn btn-accent" onclick="closeAllModals();document.getElementById('w-snake').value='${sid}';openWeightModal()">⚖️ Váha</button>
+      <button class="btn" onclick="closeAllModals();document.getElementById('sh-snake').value='${sid}';openShedModal()">🧤 Svlek</button>
+    </div>
+    <div class="section-hdr" style="margin-top:16px;"><h2>Poslední krmení</h2></div>
+    ${feedings.length?feedings.map(f=>`<div class="log-item">
+      <div class="log-icon">${f.result==='přijato'?'✅':f.result==='odmítnuto'?'❌':'⚠️'}</div>
+      <div class="log-info"><div class="log-title">${f.prey_size} ${f.prey_type} · ${f.prey_state}</div><div class="log-sub">${f.notes||f.result}</div></div>
+      <div class="log-date">${formatDate(f.date)}</div>
+    </div>`).join(''):'<div style="color:var(--text2);font-size:13px;padding:8px;">Žádné záznamy</div>'}
+    <div class="section-hdr" style="margin-top:8px;"><h2>Váhová historie</h2></div>
+    ${weights.slice(-5).reverse().map(w=>`<div class="log-item">
+      <div class="log-icon">⚖️</div>
+      <div class="log-info"><div class="log-title">${w.weight} g</div><div class="log-sub">${w.notes||''}</div></div>
+      <div class="log-date">${formatDate(w.date)}</div>
+    </div>`).join('')||'<div style="color:var(--text2);font-size:13px;padding:8px;">Žádné záznamy</div>'}
+    ${snake.notes?`<div class="card" style="margin-top:12px;"><div style="font-size:12px;color:var(--text2);margin-bottom:4px;">POZNÁMKY</div><div style="font-size:14px;">${snake.notes}</div></div>`:''}
+    <div style="margin-top:16px;">
+      <button class="btn btn-danger btn-full" onclick="deleteSnake('${sid}')">Smazat hada</button>
+    </div>
+  `;
+  // Populate selects for detail buttons
+  populateSnakeSelect('f-snake');
+  populateSnakeSelect('w-snake');
+  populateSnakeSelect('sh-snake');
+  setTimeout(()=>{
+    const fs = document.getElementById('f-snake');
+    if(fs) fs.value = sid;
+    const ws = document.getElementById('w-snake');
+    if(ws) ws.value = sid;
+    const ss = document.getElementById('sh-snake');
+    if(ss) ss.value = sid;
+  },50);
+}
+
+function closeAllModals() {
+  document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open'));
+}
+
+function deleteSnake(sid) {
+  if (!confirm('Smazat tohoto hada a všechny záznamy?')) return;
+  DB.snakes = DB.snakes.filter(s=>s.id!==sid);
+  DB.feedings = DB.feedings.filter(f=>f.snake_id!==sid);
+  DB.weights = DB.weights.filter(w=>w.snake_id!==sid);
+  DB.sheds = DB.sheds.filter(s=>s.snake_id!==sid);
+  DB.reminders = DB.reminders.filter(r=>r.snake_id!==sid);
+  save(); renderSnakes(); updateHeader();
+}
+
+function updateFilterSelects() {
+  const opts = '<option value="">— všichni hadi —</option>' + DB.snakes.filter(s=>s.status==='aktivní').map(s=>`<option value="${s.id}">${s.emoji} ${s.name}</option>`).join('');
+  ['snake-select-filter','snake-select-filter-w','snake-select-filter-s'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = opts;
+  });
+}
+
+function renderFeedings() {
+  updateFilterSelects();
+  const sid = document.getElementById('snake-select-filter').value;
+  let items = DB.feedings.filter(f=>!sid||f.snake_id===sid).sort((a,b)=>b.date.localeCompare(a.date));
+  const el = document.getElementById('feedings-list');
+  if (!items.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">🐁</div><p>Žádná krmení.</p></div>`; return; }
+  el.innerHTML = items.map(f=>{
+    const snake = DB.snakes.find(s=>s.id===f.snake_id);
+    const icon = f.result==='přijato'?'✅':f.result==='odmítnuto'?'❌':'⚠️';
+    return `<div class="log-item">
+      <div class="log-icon">${icon}</div>
+      <div class="log-info">
+        <div class="log-title">${snake?snake.emoji+' '+snake.name:'?'} · ${f.prey_size} ${f.prey_type}</div>
+        <div class="log-sub">${f.prey_state} · ${f.result}${f.notes?' · '+f.notes:''}</div>
+      </div>
+      <div class="log-date">${formatDate(f.date)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('snake-select-filter').onchange = () => renderFeedings();
+}
+
+function renderWeights() {
+  updateFilterSelects();
+  const sid = document.getElementById('snake-select-filter-w').value;
+  let items = DB.weights.filter(w=>!sid||w.snake_id===sid).sort((a,b)=>b.date.localeCompare(a.date));
+  const el = document.getElementById('weights-list');
+  if (!items.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">⚖️</div><p>Žádné váhy.</p></div>`; return; }
+  el.innerHTML = items.map(w=>{
+    const snake = DB.snakes.find(s=>s.id===w.snake_id);
+    return `<div class="log-item">
+      <div class="log-icon">⚖️</div>
+      <div class="log-info">
+        <div class="log-title">${snake?snake.emoji+' '+snake.name:'?'} · <strong style="color:var(--accent)">${w.weight} g</strong></div>
+        <div class="log-sub">${w.notes||''}</div>
+      </div>
+      <div class="log-date">${formatDate(w.date)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('snake-select-filter-w').onchange = () => renderWeights();
+}
+
+function renderSheds() {
+  updateFilterSelects();
+  const sid = document.getElementById('snake-select-filter-s').value;
+  let items = DB.sheds.filter(s=>!sid||s.snake_id===sid).sort((a,b)=>b.date.localeCompare(a.date));
+  const el = document.getElementById('sheds-list');
+  if (!items.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">🧤</div><p>Žádné svleky.</p></div>`; return; }
+  el.innerHTML = items.map(sh=>{
+    const snake = DB.snakes.find(s=>s.id===sh.snake_id);
+    const icon = sh.result==='kompletní'?'✅':sh.result==='problémový'?'⚠️':'❌';
+    return `<div class="log-item">
+      <div class="log-icon">${icon}</div>
+      <div class="log-info">
+        <div class="log-title">${snake?snake.emoji+' '+snake.name:'?'} · ${sh.result}</div>
+        <div class="log-sub">${sh.notes||''}</div>
+      </div>
+      <div class="log-date">${formatDate(sh.date)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('snake-select-filter-s').onchange = () => renderSheds();
+}
+
+function renderReminders() {
+  const now = new Date(TODAY);
+  // Auto-generate reminders overview
+  let items = [];
+  DB.snakes.filter(s=>s.status==='aktivní').forEach(snake => {
+    const r = DB.reminders.find(r=>r.snake_id===snake.id&&r.type==='krmení'&&!r.done);
+    if (r) items.push({...r, snake});
+  });
+  items.sort((a,b)=>a.due_date.localeCompare(b.due_date));
+  
+  const el = document.getElementById('reminders-list');
+  if (!items.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🔔</div><p>Žádné připomínky.<br>Přidej hady a krmení!</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card" style="margin-bottom:16px;">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">PŘEHLED KRMENÍ</div>
+    ${items.map(item=>{
+      const d = daysDiff(item.due_date);
+      const urgent = d < 0;
+      const today = d === 0;
+      let label = d < 0 ? `${Math.abs(d)}d po splatnosti` : d===0?'dnes':d===1?'zítra':`za ${d} dní`;
+      let cls = urgent?'urgent':(today?'urgent':'');
+      return `<div class="reminder-item ${cls}" onclick="toggleReminder('${item.id}')">
+        <div style="font-size:20px;">${item.snake.emoji}</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;">${item.snake.name}</div>
+          <div style="font-size:11px;color:var(--text2);">krmení · ${formatDate(item.due_date)}</div>
+        </div>
+        <div style="font-size:12px;color:${urgent?'var(--danger)':'var(--accent)'};font-family:monospace;">${label}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function toggleReminder(id) {
+  const r = DB.reminders.find(r=>r.id===id);
+  if (r) { r.done = !r.done; save(); renderReminders(); }
+}
+
+// INIT
+load();
+populateSnakeSelect('f-snake');
+populateSnakeSelect('w-snake');
+populateSnakeSelect('sh-snake');
+renderPage('hadi');
+updateHeader();
+
+// Demo data if empty
+if (DB.snakes.length === 0) {
+  // Add sample snake for demo
+  const demo = {id:uid(),name:'Luna',emoji:'🟡',morph:'Pastel',sex:'♀',birth_date:'2022-03-15',weight_current:850,feeding_interval_days:7,notes:'Oblíbená. Krmí se bez problémů.',status:'aktivní',created:TODAY};
+  DB.snakes.push(demo);
+  DB.weights.push({id:uid(),snake_id:demo.id,date:'2024-01-01',weight:620,notes:''});
+  DB.weights.push({id:uid(),snake_id:demo.id,date:'2024-04-01',weight:700,notes:''});
+  DB.weights.push({id:uid(),snake_id:demo.id,date:'2024-07-01',weight:780,notes:''});
+  DB.weights.push({id:uid(),snake_id:demo.id,date:TODAY,weight:850,notes:'Poslední vážení'});
+  DB.feedings.push({id:uid(),snake_id:demo.id,date:addDays(TODAY,-5),prey_type:'Myš',prey_size:'Medium',prey_state:'Rozmražená',result:'přijato',notes:''});
+  DB.feedings.push({id:uid(),snake_id:demo.id,date:addDays(TODAY,-12),prey_type:'Myš',prey_size:'Medium',prey_state:'Rozmražená',result:'přijato',notes:''});
+  DB.sheds.push({id:uid(),snake_id:demo.id,date:addDays(TODAY,-20),result:'kompletní',notes:'Pěkný kompletní svlek'});
+  DB.reminders.push({id:uid(),snake_id:demo.id,type:'krmení',due_date:addDays(TODAY,2),done:false});
+  save(); renderPage('hadi'); updateHeader();
+}
+</script>
+</body>
+</html>
