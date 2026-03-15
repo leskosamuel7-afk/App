@@ -1,12 +1,12 @@
 {
-  "background_color": "#ffffff",
+  "background_color": "#0f1117",
   "dir": "ltr",
   "display": "standalone",
-  "name": "SnakeApp",
-  "orientation": "any",
-  "scope": "/",
-  "short_name": "Snake",
-  "start_url": "/",
-  "theme_color": "#ffffff",
-  "description": "Snake tracker"
+  "name": "KrájtApp",
+  "orientation": "portrait",
+  "scope": "https://leskosamuel7-afk.github.io/App/",
+  "short_name": "KrájtApp",
+  "start_url": "https://leskosamuel7-afk.github.io/App/",
+  "theme_color": "#c8a96e",
+  "description": "Tracker krajt královských"
 }
